@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LRU Cache Visualizer</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+            padding-bottom: 50px;
+        }
+        .node {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            text-align: center;
+            margin: 5px;
+            position: relative;
+            background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .node.highlighted {
+            background-color: #c9e8ff;
+            border-color: #0056b3;
+            animation: pulse 0.5s;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .node-key {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .node-value {
+            font-size: 1.2rem;
+        }
+        .doubly-linked-list {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            position: relative;
+            min-height: 150px;
+        }
+        .arrow {
+            position: absolute;
+            height: 2px;
+            background-color: #6c757d;
+            z-index: -1;
+        }
+        .arrow::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-top: 2px solid #6c757d;
+            border-right: 2px solid #6c757d;
+            transform: rotate(45deg);
+            right: 0;
+            top: -4px;
+        }
+        .dummy-node {
+            background-color: #e9ecef;
+            border-color: #6c757d;
+            width: 70px;
+            height: 70px;
+        }
+        .map-container {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 30px;
+            background-color: #f8f9fa;
+        }
+        .map-entry {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 5px 0;
+            background-color: white;
+        }
+        .map-entry.highlighted {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+            animation: pulse 0.5s;
+        }
+        .operation-log {
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        #codeSection {
+            height: 300px;
+            overflow-y: auto;
+        }
+        .tab-content {
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">LRU Cache Visualizer</h1>
+        
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="visualizer-tab" data-bs-toggle="tab" data-bs-target="#visualizer" type="button" role="tab" aria-controls="visualizer" aria-selected="true">Visualizer</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="code-tab" data-bs-toggle="tab" data-bs-target="#code" type="button" role="tab" aria-controls="code" aria-selected="false">Implementation</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="explanation-tab" data-bs-toggle="tab" data-bs-target="#explanation" type="button" role="tab" aria-controls="explanation" aria-selected="false">Explanation</button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="myTabContent">
+            <div class="tab-pane fade show active" id="visualizer" role="tabpanel" aria-labelledby="visualizer-tab">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Controls</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group mb-3">
+                                    <label for="capacityInput">Cache Capacity:</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="capacityInput" value="3" min="1" max="10">
+                                        <button class="btn btn-primary" id="initCacheBtn">Initialize Cache</button>
+                                    </div>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="keyInput">Key:</label>
+                                    <input type="text" class="form-control" id="keyInput">
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="valueInput">Value:</label>
+                                    <input type="text" class="form-control" id="valueInput">
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button class="btn btn-success" id="getBtn">Get(key)</button>
+                                    <button class="btn btn-primary" id="putBtn">Put(key, value)</button>
+                                    <button class="btn btn-secondary" id="resetBtn">Reset</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">Operation Log</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="operation-log" id="operationLog"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Doubly Linked List (Most Recently Used → Least Recently Used)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="doubly-linked-list" id="doublyLinkedList">
+                            <!-- List will be rendered here by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0">Hash Map</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="map-container" id="hashMapContainer">
+                            <div class="text-center text-muted" id="emptyMapMessage">The hash map is empty</div>
+                            <div id="mapEntries"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="code" role="tabpanel" aria-labelledby="code-tab">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">LRU Cache Implementation</h5>
+                    </div>
+                    <div class="card-body" id="codeSection">
+                        <pre class="bg-light p-3 rounded">
+class DLLNode {
+  constructor(key, value) {
+    this.key = key;
+    this.value = value;
+    this.prev = null;
+    this.next = null;
+  }
+}
+
+class LRUCache {
+  constructor(capacity) {
+    this.capacity = capacity;
+    this.size = 0;
+    this.cache = {}; // Hash map
+    
+    // Dummy head and tail nodes
+    this.head = new DLLNode(0, 0);
+    this.tail = new DLLNode(0, 0);
+    
+    // Connect head and tail
+    this.head.next = this.tail;
+    this.tail.prev = this.head;
+  }
+  
+  // Add a node right after the head
+  addNode(node) {
+    node.prev = this.head;
+    node.next = this.head.next;
+    
+    this.head.next.prev = node;
+    this.head.next = node;
+  }
+  
+  // Remove a node from the linked list
+  removeNode(node) {
+    const prev = node.prev;
+    const next = node.next;
+    
+    prev.next = next;
+    next.prev = prev;
+  }
+  
+  // Move a node to the head (recently used)
+  moveToHead(node) {
+    this.removeNode(node);
+    this.addNode(node);
+  }
+  
+  // Remove the node before tail (least recently used)
+  popTail() {
+    const node = this.tail.prev;
+    this.removeNode(node);
+    return node;
+  }
+  
+  // Get value by key
+  get(key) {
+    const node = this.cache[key];
+    if (!node) return -1;
+    
+    // Move to head (recently used)
+    this.moveToHead(node);
+    return node.value;
+  }
+  
+  // Put key-value pair
+  put(key, value) {
+    const node = this.cache[key];
+    
+    if (!node) {
+      // Create new node
+      const newNode = new DLLNode(key, value);
+      this.cache[key] = newNode;
+      this.addNode(newNode);
+      this.size++;
+      
+      // Check if over capacity
+      if (this.size > this.capacity) {
+        // Remove least recently used
+        const tail = this.popTail();
+        delete this.cache[tail.key];
+        this.size--;
+      }
+    } else {
+      // Update value
+      node.value = value;
+      this.moveToHead(node);
+    }
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="explanation" role="tabpanel" aria-labelledby="explanation-tab">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">How the LRU Cache Works</h5>
+                    </div>
+                    <div class="card-body">
+                        <h5>LRU Cache Design</h5>
+                        <p>The LRU (Least Recently Used) Cache implementation uses two primary data structures:</p>
+                        
+                        <h6>1. Doubly Linked List</h6>
+                        <ul>
+                            <li>Maintains the order of usage</li>
+                            <li>Most recently used items are near the head</li>
+                            <li>Least recently used items are near the tail</li>
+                            <li>Two dummy nodes (head and tail) make operations simpler</li>
+                            <li>Each node contains key, value, and pointers to prev and next nodes</li>
+                        </ul>
+                        
+                        <h6>2. Hash Map (Dictionary/Object)</h6>
+                        <ul>
+                            <li>Provides O(1) time complexity for lookups</li>
+                            <li>Maps keys to nodes in the linked list</li>
+                            <li>Enables quick access to any node regardless of position</li>
+                        </ul>
+                        
+                        <h5>Key Operations</h5>
+                        
+                        <h6>Get Operation:</h6>
+                        <ol>
+                            <li>Look up the key in the hash map</li>
+                            <li>If found:
+                                <ul>
+                                    <li>Move the node to the front (most recently used)</li>
+                                    <li>Return the value</li>
+                                </ul>
+                            </li>
+                            <li>If not found, return "not found" (-1)</li>
+                        </ol>
+                        
+                        <h6>Put Operation:</h6>
+                        <ol>
+                            <li>If key already exists:
+                                <ul>
+                                    <li>Update the value</li>
+                                    <li>Move the node to the front (most recently used)</li>
+                                </ul>
+                            </li>
+                            <li>If key doesn't exist:
+                                <ul>
+                                    <li>Create a new node with key-value pair</li>
+                                    <li>Add the node to the front of the list</li>
+                                    <li>Add entry to hash map</li>
+                                    <li>If cache is over capacity:
+                                        <ul>
+                                            <li>Remove the node at the tail (least recently used)</li>
+                                            <li>Remove the corresponding entry from the hash map</li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ol>
+                        
+                        <h6>Helper Methods:</h6>
+                        <ul>
+                            <li><strong>addNode</strong>: Adds a node right after the head</li>
+                            <li><strong>removeNode</strong>: Removes a node from the linked list</li>
+                            <li><strong>moveToHead</strong>: Moves a node to the front (used to mark as recently used)</li>
+                            <li><strong>popTail</strong>: Removes and returns the least recently used node (before tail)</li>
+                        </ul>
+                        
+                        <h5>Time and Space Complexity</h5>
+                        <ul>
+                            <li><strong>Time Complexity</strong>: O(1) for both get and put operations</li>
+                            <li><strong>Space Complexity</strong>: O(capacity) for storing up to 'capacity' number of key-value pairs</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        class DLLNode {
+            constructor(key, value) {
+                this.key = key;
+                this.value = value;
+                this.prev = null;
+                this.next = null;
+                this.element = null; // DOM element reference
+            }
+        }
+
+        class LRUCache {
+            constructor(capacity) {
+                this.capacity = capacity;
+                this.size = 0;
+                this.cache = {}; // Hash map
+                
+                // Dummy head and tail nodes
+                this.head = new DLLNode('HEAD', 'HEAD');
+                this.tail = new DLLNode('TAIL', 'TAIL');
+                
+                // Connect head and tail
+                this.head.next = this.tail;
+                this.tail.prev = this.head;
+                
+                // Visualization functions
+                this.logCallback = null;
+                this.updateUICallback = null;
+            }
+            
+            setCallbacks(logCallback, updateUICallback) {
+                this.logCallback = logCallback;
+                this.updateUICallback = updateUICallback;
+            }
+            
+            logOperation(message) {
+                if (this.logCallback) {
+                    this.logCallback(message);
+                }
+            }
+            
+            // Add a node right after the head
+            addNode(node) {
+                node.prev = this.head;
+                node.next = this.head.next;
+                
+                this.head.next.prev = node;
+                this.head.next = node;
+                
+                this.logOperation(`Added node with key=${node.key}, value=${node.value} after HEAD`);
+                if (this.updateUICallback) this.updateUICallback();
+            }
+            
+            // Remove a node from the linked list
+            removeNode(node) {
+                const prev = node.prev;
+                const next = node.next;
+                
+                prev.next = next;
+                next.prev = prev;
+                
+                this.logOperation(`Removed node with key=${node.key}, value=${node.value} from list`);
+                if (this.updateUICallback) this.updateUICallback();
+            }
+            
+            // Move a node to the head (recently used)
+            moveToHead(node) {
+                this.logOperation(`Moving node with key=${node.key} to head (mark as recently used)`);
+                this.removeNode(node);
+                this.addNode(node);
+            }
+            
+            // Remove the node before tail (least recently used)
+            popTail() {
+                const node = this.tail.prev;
+                if (node === this.head) {
+                    this.logOperation("Cannot remove from an empty list");
+                    return null;
+                }
+                this.removeNode(node);
+                this.logOperation(`Removed LRU node with key=${node.key} from tail`);
+                return node;
+            }
+            
+            // Get value by key
+            get(key) {
+                this.logOperation(`Attempting to get key=${key}`);
+                const node = this.cache[key];
+                if (!node) {
+                    this.logOperation(`Key=${key} not found in cache`);
+                    return -1;
+                }
+                
+                // Move to head (recently used)
+                this.logOperation(`Found key=${key}, value=${node.value}`);
+                this.highlightNode(node, 'get');
+                this.moveToHead(node);
+                return node.value;
+            }
+            
+            // Put key-value pair
+            put(key, value) {
+                this.logOperation(`Attempting to put key=${key}, value=${value}`);
+                
+                const node = this.cache[key];
+                
+                if (!node) {
+                    // Create new node
+                    const newNode = new DLLNode(key, value);
+                    this.cache[key] = newNode;
+                    this.addNode(newNode);
+                    this.size++;
+                    this.logOperation(`Added new node with key=${key}, value=${value}`);
+                    this.highlightNode(newNode, 'put');
+                    
+                    // Check if over capacity
+                    if (this.size > this.capacity) {
+                        // Remove least recently used
+                        const tail = this.popTail();
+                        this.logOperation(`Cache over capacity, removing LRU key=${tail.key}`);
+                        delete this.cache[tail.key];
+                        this.size--;
+                    }
+                } else {
+                    // Update value
+                    this.logOperation(`Updating existing node with key=${key} to value=${value}`);
+                    node.value = value;
+                    this.highlightNode(node, 'update');
+                    this.moveToHead(node);
+                }
+                if (this.updateUICallback) this.updateUICallback();
+            }
+            
+            // Highlight a node for visualization
+            highlightNode(node, operation) {
+                if (node.element) {
+                    node.element.classList.add('highlighted');
+                    setTimeout(() => {
+                        node.element.classList.remove('highlighted');
+                    }, 1500);
+                }
+                
+                // Also highlight in hashmap
+                const mapEntries = document.getElementById('mapEntries');
+                if (mapEntries) {
+                    const entryElement = document.getElementById(`map-entry-${node.key}`);
+                    if (entryElement) {
+                        entryElement.classList.add('highlighted');
+                        setTimeout(() => {
+                            entryElement.classList.remove('highlighted');
+                        }, 1500);
+                    }
+                }
+            }
+        }
+
+        // UI Controller
+        const CacheVisualizer = {
+            cache: null,
+            initialized: false,
+            
+            init() {
+                this.attachEventListeners();
+                this.initCache();
+            },
+            
+            attachEventListeners() {
+                document.getElementById('initCacheBtn').addEventListener('click', () => this.initCache());
+                document.getElementById('getBtn').addEventListener('click', () => this.handleGet());
+                document.getElementById('putBtn').addEventListener('click', () => this.handlePut());
+                document.getElementById('resetBtn').addEventListener('click', () => this.resetCache());
+            },
+            
+            initCache() {
+                const capacity = parseInt(document.getElementById('capacityInput').value);
+                if (isNaN(capacity) || capacity < 1) {
+                    this.logOperation("Please enter a valid capacity (minimum 1)");
+                    return;
+                }
+                
+                this.cache = new LRUCache(capacity);
+                this.cache.setCallbacks(
+                    (message) => this.logOperation(message),
+                    () => this.updateUI()
+                );
+                
+                this.logOperation(`Initialized new LRU Cache with capacity ${capacity}`);
+                this.initialized = true;
+                this.updateUI();
+            },
+            
+            handleGet() {
+                if (!this.checkInitialized()) return;
+                
+                const key = document.getElementById('keyInput').value.trim();
+                if (!key) {
+                    this.logOperation("Please enter a key to get");
+                    return;
+                }
+                
+                const value = this.cache.get(key);
+                if (value === -1) {
+                    this.logOperation(`Result: Key '${key}' not found in cache`);
+                } else {
+                    this.logOperation(`Result: Value for key '${key}' is '${value}'`);
+                }
+            },
+            
+            handlePut() {
+                if (!this.checkInitialized()) return;
+                
+                const key = document.getElementById('keyInput').value.trim();
+                const value = document.getElementById('valueInput').value.trim();
+                
+                if (!key) {
+                    this.logOperation("Please enter a key to put");
+                    return;
+                }
+                
+                if (!value) {
+                    this.logOperation("Please enter a value to put");
+                    return;
+                }
+                
+                this.cache.put(key, value);
+                this.logOperation(`Put operation complete: key='${key}', value='${value}'`);
+            },
+            
+            resetCache() {
+                this.cache = null;
+                this.initialized = false;
+                this.logOperation("Cache has been reset. Please initialize a new cache.");
+                this.updateUI();
+            },
+            
+            logOperation(message) {
+                const log = document.getElementById('operationLog');
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                entry.textContent = message;
+                log.appendChild(entry);
+                log.scrollTop = log.scrollHeight;
+            },
+            
+            checkInitialized() {
+                if (!this.initialized || !this.cache) {
+                    this.logOperation("Please initialize the cache first");
+                    return false;
+                }
+                return true;
+            },
+            
+            updateUI() {
+                this.updateLinkedList();
+                this.updateHashMap();
+            },
+            
+            updateLinkedList() {
+                const listContainer = document.getElementById('doublyLinkedList');
+                listContainer.innerHTML = '';
+                
+                if (!this.initialized || !this.cache) {
+                    const message = document.createElement('div');
+                    message.className = 'text-center text-muted';
+                    message.textContent = 'Please initialize the cache';
+                    listContainer.appendChild(message);
+                    return;
+                }
+                
+                // Create head node
+                const headNode = document.createElement('div');
+                headNode.className = 'node dummy-node';
+                headNode.innerHTML = '<span class="node-key">HEAD</span>';
+                listContainer.appendChild(headNode);
+                this.cache.head.element = headNode;
+                
+                // Create regular nodes
+                let current = this.cache.head.next;
+                while (current !== this.cache.tail) {
+                    // Add arrow between nodes
+                    if (current !== this.cache.head.next) {
+                        const arrow = document.createElement('div');
+                        arrow.className = 'arrow';
+                        arrow.style.width = '20px';
+                        listContainer.appendChild(arrow);
+                    }
+                    
+                    // Create node element
+                    const nodeElement = document.createElement('div');
+                    nodeElement.className = 'node';
+                    nodeElement.innerHTML = `
+                        <span class="node-key">${current.key}</span>
+                        <span class="node-value">${current.value}</span>
+                    `;
+                    listContainer.appendChild(nodeElement);
+                    current.element = nodeElement;
+                    
+                    current = current.next;
+                }
+                
+                // Create tail node
+                if (this.cache.head.next !== this.cache.tail) {
+                    const arrow = document.createElement('div');
+                    arrow.className = 'arrow';
+                    arrow.style.width = '20px';
+                    listContainer.appendChild(arrow);
+                }
+                const tailNode = document.createElement('div');
+                tailNode.className = 'node dummy-node';
+                tailNode.innerHTML = '<span class="node-key">TAIL</span>';
+                listContainer.appendChild(tailNode);
+                this.cache.tail.element = tailNode;
+                
+                // Add connecting arrows and position them
+                const arrows = listContainer.querySelectorAll('.arrow');
+                arrows.forEach(arrow => {
+                    arrow.style.width = '30px';
+                    arrow.style.top = '50px';
+                });
+            },
+            
+            updateHashMap() {
+                const mapContainer = document.getElementById('hashMapContainer');
+                const emptyMessage = document.getElementById('emptyMapMessage');
+                const entriesContainer = document.getElementById('mapEntries');
+                
+                entriesContainer.innerHTML = '';
+                
+                if (!this.initialized || !this.cache) {
+                    emptyMessage.style.display = 'block';
+                    return;
+                }
+                
+                const cache = this.cache.cache;
+                const keys = Object.keys(cache);
+                
+                if (keys.length === 0) {
+                    emptyMessage.style.display = 'block';
+                } else {
+                    emptyMessage.style.display = 'none';
+                    
+                    keys.forEach(key => {
+                        const node = cache[key];
+                        const entry = document.createElement('div');
+                        entry.className = 'map-entry';
+                        entry.id = `map-entry-${key}`;
+                        entry.innerHTML = `
+                            <div class="row">
+                                <div class="col-4"><strong>Key:</strong> ${key}</div>
+                                <div class="col-4"><strong>Value:</strong> ${node.value}</div>
+                                <div class="col-4"><strong>Address:</strong> Node@${Math.floor(Math.random() * 1000)}</div>
+                            </div>
+                        `;
+                        entriesContainer.appendChild(entry);
+                    });
+                }
+            }
+        };
+        
+        // Initialize the visualizer when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            CacheVisualizer.init();
+        });
+    </script>
+</body>
+</html>
